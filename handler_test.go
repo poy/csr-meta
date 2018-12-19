@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -27,99 +26,91 @@ import (
 
 func TestHandler(t *testing.T) {
 	tests := []struct {
-		name   string
-		config string
-		path   string
+		name string
+		path string
 
-		goImport string
+		statusCode int
+		goImport   string
 	}{
 		{
-			name: "display GitHub inference",
-			config: "paths:\n" +
-				"  /portmidi:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n",
-			path:     "/portmidi",
-			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
+			name:     "infer from project/repo",
+			path:     "/rakyll/portmidi",
+			goImport: "example.com/rakyll/portmidi git https://github.com/rakyll/portmidi",
 		},
 		{
-			name: "Bitbucket Git",
-			config: "paths:\n" +
-				"  /mygit:\n" +
-				"    repo: https://bitbucket.org/zombiezen/mygit\n",
-			path:     "/mygit",
-			goImport: "example.com/mygit git https://bitbucket.org/zombiezen/mygit",
+			name:     "subpath",
+			path:     "/rakyll/portmidi/foo",
+			goImport: "example.com/rakyll/portmidi git https://github.com/rakyll/portmidi",
 		},
 		{
-			name: "subpath",
-			config: "paths:\n" +
-				"  /portmidi:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n",
-			path:     "/portmidi/foo",
-			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
+			name:       "no repo",
+			path:       "/rakyll",
+			statusCode: http.StatusNotFound,
 		},
 		{
-			name: "subpath with trailing config slash",
-			config: "paths:\n" +
-				"  /portmidi/:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n",
-			path:     "/portmidi/foo",
-			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
+			name:       "no repo trailing slash",
+			path:       "/rakyll/",
+			statusCode: http.StatusNotFound,
+		},
+		{
+			name:       "empty project",
+			path:       "//portmidi",
+			statusCode: http.StatusNotFound,
+		},
+		{
+			name:       "no repo or project",
+			path:       "/",
+			statusCode: http.StatusNotFound,
 		},
 	}
 	for _, test := range tests {
-		h, err := newHandler(0, []byte(test.config))
-		if err != nil {
-			t.Errorf("%s: newHandler: %v", test.name, err)
-			continue
-		}
-		s := httptest.NewServer(h)
-		resp, err := http.Get(s.URL + test.path)
-		if err != nil {
+		t.Run(test.name, func(t *testing.T) {
+			h, err := newHandler(0)
+			if err != nil {
+				t.Fatalf("newHandler: %v", err)
+			}
+			s := httptest.NewServer(h)
+			resp, err := http.Get(s.URL + test.path)
+			if err != nil {
+				s.Close()
+				t.Fatalf("http.Get: %v", err)
+			}
+			data, err := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
 			s.Close()
-			t.Errorf("%s: http.Get: %v", test.name, err)
-			continue
-		}
-		data, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		s.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("%s: status code = %s; want 200 OK", test.name, resp.Status)
-		}
-		if err != nil {
-			t.Errorf("%s: ioutil.ReadAll: %v", test.name, err)
-			continue
-		}
+			if test.statusCode == 0 && resp.StatusCode != http.StatusOK {
+				t.Fatalf("status code = %s; want 200 OK", resp.Status)
+			}
 
-		test.goImport = strings.Replace(
-			test.goImport,
-			"example.com",
-			strings.Replace(s.URL, "http://", "", 1),
-			1,
-		)
-		if got := findMeta(data, "go-import"); got != test.goImport {
-			t.Errorf("%s: meta go-import = %q; want %q", test.name, got, test.goImport)
-		}
+			if test.statusCode != 0 && test.statusCode != http.StatusOK {
+				if resp.StatusCode != test.statusCode {
+					t.Fatalf("status code = %s; want %d", resp.Status, test.statusCode)
+				}
+				// We don't care about the rest of the test
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("ioutil.ReadAll: %v", err)
+			}
+
+			test.goImport = strings.Replace(
+				test.goImport,
+				"example.com",
+				strings.Replace(s.URL, "http://", "", 1),
+				1,
+			)
+			if got := findMeta(data, "go-import"); got != test.goImport {
+				t.Fatalf("meta go-import = %q; want %q", got, test.goImport)
+			}
+		})
 	}
 }
 
-// TODO: Roll into different test
-func TestBadConfigs(t *testing.T) {
-	badConfigs := []struct {
-		cfg      string
-		cacheAge time.Duration
-	}{
-		{
-			cfg: "paths:\n" +
-				"  /portmidi:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n",
-			cacheAge: -1 * time.Second,
-		},
-	}
-	for _, test := range badConfigs {
-		_, err := newHandler(test.cacheAge, []byte(test.cfg))
-		if err == nil {
-			t.Errorf("expected config to produce an error, but did not:\n%+v", test)
-		}
+func TestBadCacheAge(t *testing.T) {
+	_, err := newHandler(-1 * time.Second)
+	if err == nil {
+		t.Errorf("expected config to produce an error, but did not")
 	}
 }
 
@@ -140,109 +131,6 @@ func findMeta(data []byte, name string) string {
 	return string(content[:j])
 }
 
-func TestPathConfigSetFind(t *testing.T) {
-	tests := []struct {
-		paths   []string
-		query   string
-		want    string
-		subpath string
-	}{
-		{
-			paths: []string{"/portmidi"},
-			query: "/portmidi",
-			want:  "/portmidi",
-		},
-		{
-			paths: []string{"/portmidi"},
-			query: "/portmidi/",
-			want:  "/portmidi",
-		},
-		{
-			paths: []string{"/portmidi"},
-			query: "/foo",
-			want:  "",
-		},
-		{
-			paths: []string{"/portmidi"},
-			query: "/zzz",
-			want:  "",
-		},
-		{
-			paths: []string{"/abc", "/portmidi", "/xyz"},
-			query: "/portmidi",
-			want:  "/portmidi",
-		},
-		{
-			paths:   []string{"/abc", "/portmidi", "/xyz"},
-			query:   "/portmidi/foo",
-			want:    "/portmidi",
-			subpath: "foo",
-		},
-		{
-			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
-			query:   "/x",
-			want:    "/",
-			subpath: "x",
-		},
-		{
-			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
-			query:   "/",
-			want:    "/",
-			subpath: "",
-		},
-		{
-			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
-			query:   "/example",
-			want:    "/",
-			subpath: "example",
-		},
-		{
-			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
-			query:   "/example/foo",
-			want:    "/",
-			subpath: "example/foo",
-		},
-		{
-			paths: []string{"/example/helloworld", "/", "/y", "/foo"},
-			query: "/y",
-			want:  "/y",
-		},
-		{
-			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
-			query:   "/x/y/",
-			want:    "/",
-			subpath: "x/y/",
-		},
-		{
-			paths: []string{"/example/helloworld", "/y", "/foo"},
-			query: "/x",
-			want:  "",
-		},
-	}
-	emptyToNil := func(s string) string {
-		if s == "" {
-			return "<nil>"
-		}
-		return s
-	}
-	for _, test := range tests {
-		pset := make(pathConfigSet, len(test.paths))
-		for i := range test.paths {
-			pset[i].path = test.paths[i]
-		}
-		sort.Sort(pset)
-		pc, subpath := pset.find(test.query)
-		var got string
-		if pc != nil {
-			got = pc.path
-		}
-		if got != test.want || subpath != test.subpath {
-			t.Errorf("pathConfigSet(%v).find(%q) = %v, %v; want %v, %v",
-				test.paths, test.query, emptyToNil(got), subpath, emptyToNil(test.want), test.subpath)
-		}
-	}
-}
-
 func TestCacheHeader(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -257,34 +145,31 @@ func TestCacheHeader(t *testing.T) {
 		},
 		{
 			name:         "specify time",
-			config:       "cache_max_age: 60\n",
 			cacheControl: "public, max-age=60",
 			cacheAge:     60 * time.Second,
 		},
 		{
 			name:         "zero",
-			config:       "cache_max_age: 0\n",
 			cacheControl: "public, max-age=0",
 			cacheAge:     0 * time.Second,
 		},
 	}
 	for _, test := range tests {
-		h, err := newHandler(test.cacheAge, []byte("paths:\n  /portmidi:\n    repo: https://github.com/rakyll/portmidi\n"+
-			test.config))
-		if err != nil {
-			t.Errorf("%s: newHandler: %v", test.name, err)
-			continue
-		}
-		s := httptest.NewServer(h)
-		resp, err := http.Get(s.URL + "/portmidi")
-		if err != nil {
-			t.Errorf("%s: http.Get: %v", test.name, err)
-			continue
-		}
-		resp.Body.Close()
-		got := resp.Header.Get("Cache-Control")
-		if got != test.cacheControl {
-			t.Errorf("%s: Cache-Control header = %q; want %q", test.name, got, test.cacheControl)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			h, err := newHandler(test.cacheAge)
+			if err != nil {
+				t.Fatalf("newHandler: %v", err)
+			}
+			s := httptest.NewServer(h)
+			resp, err := http.Get(s.URL + "/rakyll/portmidi")
+			if err != nil {
+				t.Fatalf("http.Get: %v", err)
+			}
+			resp.Body.Close()
+			got := resp.Header.Get("Cache-Control")
+			if got != test.cacheControl {
+				t.Fatalf("Cache-Control header = %q; want %q", got, test.cacheControl)
+			}
+		})
 	}
 }

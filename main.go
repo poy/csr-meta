@@ -17,7 +17,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -26,21 +25,7 @@ import (
 
 func main() {
 	log := log.New(os.Stderr, "", log.LstdFlags)
-
-	var configPath string
-	switch len(os.Args) {
-	case 1:
-		configPath = "vanity.yaml"
-	case 2:
-		configPath = os.Args[1]
-	default:
-		log.Fatal("usage: govanityurls [CONFIG]")
-	}
-	vanity, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	h, err := newHandler(cacheAge(log), vanity)
+	h, err := newHandler(cacheAge(log))
 	if err != nil {
 		log.Fatal(err)
 	}

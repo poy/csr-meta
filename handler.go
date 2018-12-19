@@ -20,16 +20,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v2"
 )
 
 type handler struct {
 	cacheControl string
-	paths        pathConfigSet
 }
 
 type pathConfig struct {
@@ -37,39 +33,35 @@ type pathConfig struct {
 	repo string
 }
 
-func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
-	var parsed struct {
-		Paths map[string]struct {
-			Repo string `yaml:"repo,omitempty"`
-		} `yaml:"paths,omitempty"`
-	}
-	if err := yaml.Unmarshal(config, &parsed); err != nil {
-		return nil, err
-	}
+func newHandler(cacheAge time.Duration) (*handler, error) {
 	h := &handler{}
 	if cacheAge < 0 {
 		return nil, errors.New("cache_max_age is negative")
 	}
 	h.cacheControl = fmt.Sprintf("public, max-age=%d", cacheAge/time.Second)
-	for path, e := range parsed.Paths {
-		pc := pathConfig{
-			path: strings.TrimSuffix(path, "/"),
-			repo: e.Repo,
-		}
-		h.paths = append(h.paths, pc)
-	}
-	sort.Sort(h.paths)
 	return h, nil
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	current := r.URL.Path
-	pc, subpath := h.paths.find(current)
-	if pc == nil && current == "/" {
-		h.serveIndex(w, r)
+	if strings.HasSuffix(current, "/") {
+		current = strings.TrimSuffix(current, "/")
+	}
+
+	parts := strings.SplitN(current, "/", 4)
+
+	switch len(parts) {
+	case 3:
+		parts = append(parts, "")
+	case 4:
+		// NOP
+	default:
+		http.NotFound(w, r)
 		return
 	}
-	if pc == nil {
+
+	proj, repo, subpath := parts[1], parts[2], parts[3]
+	if proj == "" || repo == "" {
 		http.NotFound(w, r)
 		return
 	}
@@ -80,39 +72,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Subpath string
 		Repo    string
 	}{
-		Import:  defaultHost(r) + pc.path,
+		Import:  fmt.Sprintf("%s/%s/%s", defaultHost(r), proj, repo),
 		Subpath: subpath,
-		Repo:    pc.repo,
+		Repo:    fmt.Sprintf("https://github.com/%s/%s", proj, repo),
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
 }
-
-func (h *handler) serveIndex(w http.ResponseWriter, r *http.Request) {
-	host := defaultHost(r)
-	handlers := make([]string, len(h.paths))
-	for i, h := range h.paths {
-		handlers[i] = host + h.path
-	}
-	if err := indexTmpl.Execute(w, struct {
-		Host     string
-		Handlers []string
-	}{
-		Host:     host,
-		Handlers: handlers,
-	}); err != nil {
-		http.Error(w, "cannot render the page", http.StatusInternalServerError)
-	}
-}
-
-var indexTmpl = template.Must(template.New("index").Parse(`<!DOCTYPE html>
-<html>
-<h1>{{.Host}}</h1>
-<ul>
-{{range .Handlers}}<li><a href="https://godoc.org/{{.}}">{{.}}</a></li>{{end}}
-</ul>
-</html>
-`))
 
 var vanityTmpl = template.Must(template.New("vanity").Parse(`<!DOCTYPE html>
 <html>
@@ -125,57 +91,3 @@ var vanityTmpl = template.Must(template.New("vanity").Parse(`<!DOCTYPE html>
 Nothing to see here; <a href="https://godoc.org/{{.Import}}/{{.Subpath}}">see the package on godoc</a>.
 </body>
 </html>`))
-
-type pathConfigSet []pathConfig
-
-func (pset pathConfigSet) Len() int {
-	return len(pset)
-}
-
-func (pset pathConfigSet) Less(i, j int) bool {
-	return pset[i].path < pset[j].path
-}
-
-func (pset pathConfigSet) Swap(i, j int) {
-	pset[i], pset[j] = pset[j], pset[i]
-}
-
-func (pset pathConfigSet) find(path string) (pc *pathConfig, subpath string) {
-	// Fast path with binary search to retrieve exact matches
-	// e.g. given pset ["/", "/abc", "/xyz"], path "/def" won't match.
-	i := sort.Search(len(pset), func(i int) bool {
-		return pset[i].path >= path
-	})
-	if i < len(pset) && pset[i].path == path {
-		return &pset[i], ""
-	}
-	if i > 0 && strings.HasPrefix(path, pset[i-1].path+"/") {
-		return &pset[i-1], path[len(pset[i-1].path)+1:]
-	}
-
-	// Slow path, now looking for the longest prefix/shortest subpath i.e.
-	// e.g. given pset ["/", "/abc/", "/abc/def/", "/xyz"/]
-	//  * query "/abc/foo" returns "/abc/" with a subpath of "foo"
-	//  * query "/x" returns "/" with a subpath of "x"
-	lenShortestSubpath := len(path)
-	var bestMatchConfig *pathConfig
-
-	// After binary search with the >= lexicographic comparison,
-	// nothing greater than i will be a prefix of path.
-	max := i
-	for i := 0; i < max; i++ {
-		ps := pset[i]
-		if len(ps.path) >= len(path) {
-			// We previously didn't find the path by search, so any
-			// route with equal or greater length is NOT a match.
-			continue
-		}
-		sSubpath := strings.TrimPrefix(path, ps.path)
-		if len(sSubpath) < lenShortestSubpath {
-			subpath = sSubpath
-			lenShortestSubpath = len(sSubpath)
-			bestMatchConfig = &pset[i]
-		}
-	}
-	return bestMatchConfig, subpath
-}

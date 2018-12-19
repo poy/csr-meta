@@ -19,10 +19,6 @@ go get -u -d github.com/poy/govanityurls
 cd $(go env GOPATH)/src/github.com/poy/govanityurls
 ```
 
-Edit `vanity.yaml` to add any number of git repos. E.g.,
-`customdomain.com/portmidi` will serve the
-[https://github.com/rakyll/portmidi][portmidi] repo.
-
 ```
 paths:
   /portmidi:
@@ -62,51 +58,6 @@ $ go get customdomain.com/portmidi
   </tbody>
 </table>
 
-## Configuration File
-
-```
-paths:
-  /foo:
-    repo: https://github.com/example/foo
-```
-
-<table>
-  <thead>
-    <tr>
-      <th scope="col">Key</th>
-      <th scope="col">Required</th>
-      <th scope="col">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row"><code>paths</code></th>
-      <td>required</td>
-      <td>Map of paths to path configurations. Each key is a path that will point to the root of a repository hosted elsewhere. The fields are documented in the Path Configuration section below.</td>
-    </tr>
-  </tbody>
-</table>
-
-### Path Configuration
-
-<table>
-  <thead>
-    <tr>
-      <th scope="col">Key</th>
-      <th scope="col">Required</th>
-      <th scope="col">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row"><code>repo</code></th>
-      <td>required</td>
-      <td>Root URL of the repository as it would appear in <a href="https://golang.org/cmd/go/#hdr-Remote_import_paths"><code>go-import</code> meta tag</a>.</td>
-    </tr>
-  </tbody>
-</table>
-
 
 [gcloud]:        https://cloud.google.com/sdk/downloads
 [custom-domain]: https://cloud.google.com/appengine/docs/standard/python/using-custom-domains-and-ssl
-[portmidi]:      https://github.com/rakyll/portmidi
