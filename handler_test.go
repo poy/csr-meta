@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -34,8 +35,7 @@ func TestHandler(t *testing.T) {
 	}{
 		{
 			name: "display GitHub inference",
-			config: "host: example.com\n" +
-				"paths:\n" +
+			config: "paths:\n" +
 				"  /portmidi:\n" +
 				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi",
@@ -43,8 +43,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name: "Bitbucket Git",
-			config: "host: example.com\n" +
-				"paths:\n" +
+			config: "paths:\n" +
 				"  /mygit:\n" +
 				"    repo: https://bitbucket.org/zombiezen/mygit\n",
 			path:     "/mygit",
@@ -52,8 +51,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name: "subpath",
-			config: "host: example.com\n" +
-				"paths:\n" +
+			config: "paths:\n" +
 				"  /portmidi:\n" +
 				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi/foo",
@@ -61,8 +59,7 @@ func TestHandler(t *testing.T) {
 		},
 		{
 			name: "subpath with trailing config slash",
-			config: "host: example.com\n" +
-				"paths:\n" +
+			config: "paths:\n" +
 				"  /portmidi/:\n" +
 				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi/foo",
@@ -92,6 +89,13 @@ func TestHandler(t *testing.T) {
 			t.Errorf("%s: ioutil.ReadAll: %v", test.name, err)
 			continue
 		}
+
+		test.goImport = strings.Replace(
+			test.goImport,
+			"example.com",
+			strings.Replace(s.URL, "http://", "", 1),
+			1,
+		)
 		if got := findMeta(data, "go-import"); got != test.goImport {
 			t.Errorf("%s: meta go-import = %q; want %q", test.name, got, test.goImport)
 		}

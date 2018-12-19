@@ -65,7 +65,6 @@ $ go get customdomain.com/portmidi
 ## Configuration File
 
 ```
-host: example.com
 paths:
   /foo:
     repo: https://github.com/example/foo
@@ -80,11 +79,6 @@ paths:
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <th scope="row"><code>host</code></th>
-      <td>optional</td>
-      <td>Host name to use in meta tags.  If omitted, uses the App Engine default version host or the Host header on non-App Engine Standard environments.  You can use this option to fix the host when using this service behind a reverse proxy or a <a href="https://cloud.google.com/appengine/docs/standard/go/how-requests-are-routed#routing_with_a_dispatch_file">custom dispatch file</a>.</td>
-    </tr>
     <tr>
       <th scope="row"><code>paths</code></th>
       <td>required</td>

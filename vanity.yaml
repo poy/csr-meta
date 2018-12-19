@@ -1,5 +1,3 @@
-host: rakyll.pizza
-
 paths:
   /portmidi:
     repo: https://github.com/rakyll/portmidi

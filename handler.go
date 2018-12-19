@@ -28,7 +28,6 @@ import (
 )
 
 type handler struct {
-	host         string
 	cacheControl string
 	paths        pathConfigSet
 }
@@ -40,7 +39,6 @@ type pathConfig struct {
 
 func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 	var parsed struct {
-		Host  string `yaml:"host,omitempty"`
 		Paths map[string]struct {
 			Repo string `yaml:"repo,omitempty"`
 		} `yaml:"paths,omitempty"`
@@ -48,7 +46,7 @@ func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 	if err := yaml.Unmarshal(config, &parsed); err != nil {
 		return nil, err
 	}
-	h := &handler{host: parsed.Host}
+	h := &handler{}
 	if cacheAge < 0 {
 		return nil, errors.New("cache_max_age is negative")
 	}
@@ -82,7 +80,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Subpath string
 		Repo    string
 	}{
-		Import:  h.Host(r) + pc.path,
+		Import:  defaultHost(r) + pc.path,
 		Subpath: subpath,
 		Repo:    pc.repo,
 	}); err != nil {
@@ -91,7 +89,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) serveIndex(w http.ResponseWriter, r *http.Request) {
-	host := h.Host(r)
+	host := defaultHost(r)
 	handlers := make([]string, len(h.paths))
 	for i, h := range h.paths {
 		handlers[i] = host + h.path
@@ -105,14 +103,6 @@ func (h *handler) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
-}
-
-func (h *handler) Host(r *http.Request) string {
-	host := h.host
-	if host == "" {
-		host = defaultHost(r)
-	}
-	return host
 }
 
 var indexTmpl = template.Must(template.New("index").Parse(`<!DOCTYPE html>
