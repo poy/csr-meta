@@ -57,7 +57,7 @@ $ go get customdomain.com/portmidi
     <tr>
       <th scope="row"><code>CACHE_AGE</code></th>
       <td>optional</td>
-      <td>The amount of time to cache package pages as a time.Duration (e.g., <code>24H</code>). It will be rounded to the nearest second. Controls the <code>max-age</code> directive sent in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control"><code>Cache-Control</code></a> HTTP header.</td>
+      <td>The amount of time to cache package pages as a time.Duration (e.g., <code>24h</code>). It will be rounded to the nearest second. Controls the <code>max-age</code> directive sent in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control"><code>Cache-Control</code></a> HTTP header.</td>
     </tr>
   </tbody>
 </table>
@@ -66,7 +66,6 @@ $ go get customdomain.com/portmidi
 
 ```
 host: example.com
-cache_max_age: 3600
 paths:
   /foo:
     repo: https://github.com/example/foo
@@ -83,11 +82,6 @@ paths:
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <th scope="row"><code>cache_max_age</code></th>
-      <td>optional</td>
-      <td>The amount of time to cache package pages in seconds.  Controls the <code>max-age</code> directive sent in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control"><code>Cache-Control</code></a> HTTP header.</td>
-    </tr>
     <tr>
       <th scope="row"><code>host</code></th>
       <td>optional</td>

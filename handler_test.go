@@ -21,6 +21,7 @@ import (
 	"net/http/httptest"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestHandler(t *testing.T) {
@@ -99,7 +100,7 @@ func TestHandler(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		h, err := newHandler([]byte(test.config))
+		h, err := newHandler(0, []byte(test.config))
 		if err != nil {
 			t.Errorf("%s: newHandler: %v", test.name, err)
 			continue
@@ -131,23 +132,32 @@ func TestHandler(t *testing.T) {
 }
 
 func TestBadConfigs(t *testing.T) {
-	badConfigs := []string{
-		"paths:\n" +
-			"  /missingvcs:\n" +
-			"    repo: https://bitbucket.org/zombiezen/gopdf\n",
-		"paths:\n" +
-			"  /unknownvcs:\n" +
-			"    repo: https://bitbucket.org/zombiezen/gopdf\n" +
-			"    vcs: xyzzy\n",
-		"cache_max_age: -1\n" +
-			"paths:\n" +
-			"  /portmidi:\n" +
-			"    repo: https://github.com/rakyll/portmidi\n",
+	badConfigs := []struct {
+		cfg      string
+		cacheAge time.Duration
+	}{
+		{
+			cfg: "paths:\n" +
+				"  /missingvcs:\n" +
+				"    repo: https://bitbucket.org/zombiezen/gopdf\n",
+		},
+		{
+			cfg: "paths:\n" +
+				"  /unknownvcs:\n" +
+				"    repo: https://bitbucket.org/zombiezen/gopdf\n" +
+				"    vcs: xyzzy\n",
+		},
+		{
+			cfg: "paths:\n" +
+				"  /portmidi:\n" +
+				"    repo: https://github.com/rakyll/portmidi\n",
+			cacheAge: -1 * time.Second,
+		},
 	}
-	for _, config := range badConfigs {
-		_, err := newHandler([]byte(config))
+	for _, test := range badConfigs {
+		_, err := newHandler(test.cacheAge, []byte(test.cfg))
 		if err == nil {
-			t.Errorf("expected config to produce an error, but did not:\n%s", config)
+			t.Errorf("expected config to produce an error, but did not:\n%+v", test)
 		}
 	}
 }
@@ -237,10 +247,10 @@ func TestPathConfigSetFind(t *testing.T) {
 			want:  "/y",
 		},
 		{
-			paths: []string{"/example/helloworld", "/", "/y", "/foo"},
-			query: "/x/y/",
-			want:  "/",
-			subpath:  "x/y/",
+			paths:   []string{"/example/helloworld", "/", "/y", "/foo"},
+			query:   "/x/y/",
+			want:    "/",
+			subpath: "x/y/",
 		},
 		{
 			paths: []string{"/example/helloworld", "/y", "/foo"},
@@ -277,24 +287,28 @@ func TestCacheHeader(t *testing.T) {
 		name         string
 		config       string
 		cacheControl string
+		cacheAge     time.Duration
 	}{
 		{
 			name:         "default",
 			cacheControl: "public, max-age=86400",
+			cacheAge:     86400 * time.Second,
 		},
 		{
 			name:         "specify time",
 			config:       "cache_max_age: 60\n",
 			cacheControl: "public, max-age=60",
+			cacheAge:     60 * time.Second,
 		},
 		{
 			name:         "zero",
 			config:       "cache_max_age: 0\n",
 			cacheControl: "public, max-age=0",
+			cacheAge:     0 * time.Second,
 		},
 	}
 	for _, test := range tests {
-		h, err := newHandler([]byte("paths:\n  /portmidi:\n    repo: https://github.com/rakyll/portmidi\n" +
+		h, err := newHandler(test.cacheAge, []byte("paths:\n  /portmidi:\n    repo: https://github.com/rakyll/portmidi\n"+
 			test.config))
 		if err != nil {
 			t.Errorf("%s: newHandler: %v", test.name, err)

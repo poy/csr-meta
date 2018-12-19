@@ -21,9 +21,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
+	log := log.New(os.Stderr, "", log.LstdFlags)
+
 	var configPath string
 	switch len(os.Args) {
 	case 1:
@@ -37,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	h, err := newHandler(vanity)
+	h, err := newHandler(cacheAge(log), vanity)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,4 +52,17 @@ func main() {
 
 func defaultHost(r *http.Request) string {
 	return r.Host
+}
+
+func cacheAge(log *log.Logger) time.Duration {
+	age := os.Getenv("CACHE_AGE")
+	if age == "" {
+		return 24 * time.Hour
+	}
+
+	d, err := time.ParseDuration(age)
+	if err != nil {
+		log.Fatalf("failed to parse CACHE_AGE %q: %s", age, err)
+	}
+	return d
 }

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -39,11 +40,10 @@ type pathConfig struct {
 	vcs     string
 }
 
-func newHandler(config []byte) (*handler, error) {
+func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 	var parsed struct {
-		Host     string `yaml:"host,omitempty"`
-		CacheAge *int64 `yaml:"cache_max_age,omitempty"`
-		Paths    map[string]struct {
+		Host  string `yaml:"host,omitempty"`
+		Paths map[string]struct {
 			Repo    string `yaml:"repo,omitempty"`
 			Display string `yaml:"display,omitempty"`
 			VCS     string `yaml:"vcs,omitempty"`
@@ -53,14 +53,10 @@ func newHandler(config []byte) (*handler, error) {
 		return nil, err
 	}
 	h := &handler{host: parsed.Host}
-	cacheAge := int64(86400) // 24 hours (in seconds)
-	if parsed.CacheAge != nil {
-		cacheAge = *parsed.CacheAge
-		if cacheAge < 0 {
-			return nil, errors.New("cache_max_age is negative")
-		}
+	if cacheAge < 0 {
+		return nil, errors.New("cache_max_age is negative")
 	}
-	h.cacheControl = fmt.Sprintf("public, max-age=%d", cacheAge)
+	h.cacheControl = fmt.Sprintf("public, max-age=%d", cacheAge/time.Second)
 	for path, e := range parsed.Paths {
 		pc := pathConfig{
 			path:    strings.TrimSuffix(path, "/"),
