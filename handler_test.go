@@ -31,6 +31,7 @@ func TestHandler(t *testing.T) {
 
 		statusCode int
 		goImport   string
+		headers    map[string]string
 	}{
 		{
 			name:     "infer from project/repo",
@@ -58,9 +59,19 @@ func TestHandler(t *testing.T) {
 			statusCode: http.StatusNotFound,
 		},
 		{
-			name:       "no repo or project",
+			name:       "root",
+			statusCode: http.StatusFound,
+			headers: map[string]string{
+				"Location": "https://poy.github.io/csr-meta/",
+			},
+		},
+		{
+			name:       "root with slash",
 			path:       "/",
-			statusCode: http.StatusNotFound,
+			statusCode: http.StatusFound,
+			headers: map[string]string{
+				"Location": "https://poy.github.io/csr-meta/",
+			},
 		},
 	}
 	for _, test := range tests {
@@ -70,6 +81,11 @@ func TestHandler(t *testing.T) {
 				t.Fatalf("newHandler: %v", err)
 			}
 			s := httptest.NewServer(h)
+
+			// Don't follow the redirect. We just want to observe it
+			http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
 			resp, err := http.Get(s.URL + test.path)
 			if err != nil {
 				s.Close()
@@ -80,6 +96,12 @@ func TestHandler(t *testing.T) {
 			s.Close()
 			if test.statusCode == 0 && resp.StatusCode != http.StatusOK {
 				t.Fatalf("status code = %s; want 200 OK", resp.Status)
+			}
+
+			for name, value := range test.headers {
+				if actual := resp.Header.Get(name); actual != value {
+					t.Fatalf("wanted %s to equal %s: %s", name, value, actual)
+				}
 			}
 
 			if test.statusCode != 0 && test.statusCode != http.StatusOK {

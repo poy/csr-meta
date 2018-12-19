@@ -44,6 +44,7 @@ func newHandler(cacheAge time.Duration) (*handler, error) {
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	current := r.URL.Path
+
 	if strings.HasSuffix(current, "/") {
 		current = strings.TrimSuffix(current, "/")
 	}
@@ -51,6 +52,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(current, "/", 4)
 
 	switch len(parts) {
+	case 1:
+		http.Redirect(w, r, "https://poy.github.io/csr-meta/", http.StatusFound)
+		return
 	case 3:
 		parts = append(parts, "")
 	case 4:
