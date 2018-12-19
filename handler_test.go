@@ -35,12 +35,12 @@ func TestHandler(t *testing.T) {
 		{
 			name:     "infer from project/repo",
 			path:     "/rakyll/portmidi",
-			goImport: "example.com/rakyll/portmidi git https://github.com/rakyll/portmidi",
+			goImport: "example.com/rakyll/portmidi git https://source.developers.google.com/p/rakyll/r/portmidi",
 		},
 		{
 			name:     "subpath",
 			path:     "/rakyll/portmidi/foo",
-			goImport: "example.com/rakyll/portmidi git https://github.com/rakyll/portmidi",
+			goImport: "example.com/rakyll/portmidi git https://source.developers.google.com/p/rakyll/r/portmidi",
 		},
 		{
 			name:       "no repo",

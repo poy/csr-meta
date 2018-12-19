@@ -74,7 +74,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}{
 		Import:  fmt.Sprintf("%s/%s/%s", defaultHost(r), proj, repo),
 		Subpath: subpath,
-		Repo:    fmt.Sprintf("https://github.com/%s/%s", proj, repo),
+		Repo:    fmt.Sprintf("https://source.developers.google.com/p/%s/r/%s", proj, repo),
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
