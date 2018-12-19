@@ -1,7 +1,19 @@
-# Go Vanity URLs
+# csr-meta
 
-Go Vanity URLs is a simple App Engine Go app that allows you to set custom
-import paths for your Go packages.
+Cloud Source Repositories (CSR) does not serve the required meta tags for `go
+get` to work correctly. **csr-meta** attaches the required meta tags. It
+assumes that the repo name does not have any slashes and uses each request to
+build the meta tags. Therefore
+
+```
+<hostname>/myproj/myrepo
+```
+
+corresponds to
+
+```
+source.developers.google.com/p/myproj/r/myrepo
+```
 
 ## Quickstart
 
@@ -15,8 +27,8 @@ Setup a [custom domain][custom-domain] for your app.
 
 Get the application:
 ```
-go get -u -d github.com/poy/govanityurls
-cd $(go env GOPATH)/src/github.com/poy/govanityurls
+go get -u -d github.com/poy/csr-meta
+cd $(go env GOPATH)/src/github.com/poy/csr-meta
 ```
 
 ```
