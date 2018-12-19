@@ -1,5 +1,4 @@
-csr-meta
-========
+# csr-meta
 
 [Cloud Source Repositories][csr] (CSR) is great for hosting proprietary and
 private source code. However if you have ever tried to use CSR to host Go
