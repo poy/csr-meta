@@ -31,19 +31,7 @@ func TestHandler(t *testing.T) {
 		path   string
 
 		goImport string
-		goSource string
 	}{
-		{
-			name: "explicit display",
-			config: "host: example.com\n" +
-				"paths:\n" +
-				"  /portmidi:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n" +
-				"    display: https://github.com/rakyll/portmidi _ _\n",
-			path:     "/portmidi",
-			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
-			goSource: "example.com/portmidi https://github.com/rakyll/portmidi _ _",
-		},
 		{
 			name: "display GitHub inference",
 			config: "host: example.com\n" +
@@ -52,7 +40,6 @@ func TestHandler(t *testing.T) {
 				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi",
 			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
-			goSource: "example.com/portmidi https://github.com/rakyll/portmidi https://github.com/rakyll/portmidi/tree/master{/dir} https://github.com/rakyll/portmidi/blob/master{/dir}/{file}#L{line}",
 		},
 		{
 			name: "Bitbucket Git",
@@ -62,29 +49,24 @@ func TestHandler(t *testing.T) {
 				"    repo: https://bitbucket.org/zombiezen/mygit\n",
 			path:     "/mygit",
 			goImport: "example.com/mygit git https://bitbucket.org/zombiezen/mygit",
-			goSource: "example.com/mygit https://bitbucket.org/zombiezen/mygit https://bitbucket.org/zombiezen/mygit/src/default{/dir} https://bitbucket.org/zombiezen/mygit/src/default{/dir}/{file}#{file}-{line}",
 		},
 		{
 			name: "subpath",
 			config: "host: example.com\n" +
 				"paths:\n" +
 				"  /portmidi:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n" +
-				"    display: https://github.com/rakyll/portmidi _ _\n",
+				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi/foo",
 			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
-			goSource: "example.com/portmidi https://github.com/rakyll/portmidi _ _",
 		},
 		{
 			name: "subpath with trailing config slash",
 			config: "host: example.com\n" +
 				"paths:\n" +
 				"  /portmidi/:\n" +
-				"    repo: https://github.com/rakyll/portmidi\n" +
-				"    display: https://github.com/rakyll/portmidi _ _\n",
+				"    repo: https://github.com/rakyll/portmidi\n",
 			path:     "/portmidi/foo",
 			goImport: "example.com/portmidi git https://github.com/rakyll/portmidi",
-			goSource: "example.com/portmidi https://github.com/rakyll/portmidi _ _",
 		},
 	}
 	for _, test := range tests {
@@ -112,9 +94,6 @@ func TestHandler(t *testing.T) {
 		}
 		if got := findMeta(data, "go-import"); got != test.goImport {
 			t.Errorf("%s: meta go-import = %q; want %q", test.name, got, test.goImport)
-		}
-		if got := findMeta(data, "go-source"); got != test.goSource {
-			t.Errorf("%s: meta go-source = %q; want %q", test.name, got, test.goSource)
 		}
 	}
 }

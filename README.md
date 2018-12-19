@@ -69,7 +69,6 @@ host: example.com
 paths:
   /foo:
     repo: https://github.com/example/foo
-    display: "https://github.com/example/foo https://github.com/example/foo/tree/master{/dir} https://github.com/example/foo/blob/master{/dir}/{file}#L{line}"
 ```
 
 <table>
@@ -105,11 +104,6 @@ paths:
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <th scope="row"><code>display</code></th>
-      <td>optional</td>
-      <td>The last three fields of the <a href="https://github.com/golang/gddo/wiki/Source-Code-Links"><code>go-source</code> meta tag</a>.  If omitted, it is inferred from the code hosting service if possible.</td>
-    </tr>
     <tr>
       <th scope="row"><code>repo</code></th>
       <td>required</td>

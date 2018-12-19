@@ -34,17 +34,15 @@ type handler struct {
 }
 
 type pathConfig struct {
-	path    string
-	repo    string
-	display string
+	path string
+	repo string
 }
 
 func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 	var parsed struct {
 		Host  string `yaml:"host,omitempty"`
 		Paths map[string]struct {
-			Repo    string `yaml:"repo,omitempty"`
-			Display string `yaml:"display,omitempty"`
+			Repo string `yaml:"repo,omitempty"`
 		} `yaml:"paths,omitempty"`
 	}
 	if err := yaml.Unmarshal(config, &parsed); err != nil {
@@ -57,17 +55,8 @@ func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 	h.cacheControl = fmt.Sprintf("public, max-age=%d", cacheAge/time.Second)
 	for path, e := range parsed.Paths {
 		pc := pathConfig{
-			path:    strings.TrimSuffix(path, "/"),
-			repo:    e.Repo,
-			display: e.Display,
-		}
-		switch {
-		case e.Display != "":
-			// Already filled in.
-		case strings.HasPrefix(e.Repo, "https://github.com/"):
-			pc.display = fmt.Sprintf("%v %v/tree/master{/dir} %v/blob/master{/dir}/{file}#L{line}", e.Repo, e.Repo, e.Repo)
-		case strings.HasPrefix(e.Repo, "https://bitbucket.org"):
-			pc.display = fmt.Sprintf("%v %v/src/default{/dir} %v/src/default{/dir}/{file}#{file}-{line}", e.Repo, e.Repo, e.Repo)
+			path: strings.TrimSuffix(path, "/"),
+			repo: e.Repo,
 		}
 		h.paths = append(h.paths, pc)
 	}
@@ -92,12 +81,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Import  string
 		Subpath string
 		Repo    string
-		Display string
 	}{
 		Import:  h.Host(r) + pc.path,
 		Subpath: subpath,
 		Repo:    pc.repo,
-		Display: pc.display,
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
@@ -142,7 +129,6 @@ var vanityTmpl = template.Must(template.New("vanity").Parse(`<!DOCTYPE html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <meta name="go-import" content="{{.Import}} git {{.Repo}}">
-<meta name="go-source" content="{{.Import}} {{.Display}}">
 <meta http-equiv="refresh" content="0; url=https://godoc.org/{{.Import}}/{{.Subpath}}">
 </head>
 <body>
