@@ -1,17 +1,17 @@
 # Go Vanity URLs
 
-Go Vanity URLs is a simple App Engine Go app that allows you
-to set custom import paths for your Go packages.
+Go Vanity URLs is a simple App Engine Go app that allows you to set custom
+import paths for your Go packages.
 
 ## Quickstart
 
-Install [gcloud](https://cloud.google.com/sdk/downloads) and install Go App Engine component:
+Install [gcloud][gcloud] and install Go App Engine component:
 
 ```
 $ gcloud components install app-engine-go
 ```
 
-Setup a [custom domain](https://cloud.google.com/appengine/docs/standard/python/using-custom-domains-and-ssl) for your app.
+Setup a [custom domain][custom-domain] for your app.
 
 Get the application:
 ```
@@ -19,8 +19,9 @@ go get -u -d github.com/poy/govanityurls
 cd $(go env GOPATH)/src/github.com/poy/govanityurls
 ```
 
-Edit `vanity.yaml` to add any number of git repos. E.g., `customdomain.com/portmidi` will
-serve the [https://github.com/rakyll/portmidi](https://github.com/rakyll/portmidi) repo.
+Edit `vanity.yaml` to add any number of git repos. E.g.,
+`customdomain.com/portmidi` will serve the
+[https://github.com/rakyll/portmidi][portmidi] repo.
 
 ```
 paths:
@@ -42,18 +43,24 @@ That's it! You can use `go get` to get the package from your custom domain.
 $ go get customdomain.com/portmidi
 ```
 
-### Running in other environments
+## Environment Variables
 
-You can also deploy this as an App Engine Flexible app by changing the
-`app.yaml` file:
-
-```
-runtime: go
-env: flex
-```
-
-This project is a normal Go HTTP server, so you can also incorporate the
-handler into larger Go servers.
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Required</th>
+      <th scope="col">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row"><code>CACHE_AGE</code></th>
+      <td>optional</td>
+      <td>The amount of time to cache package pages as a time.Duration (e.g., <code>24H</code>). It will be rounded to the nearest second. Controls the <code>max-age</code> directive sent in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control"><code>Cache-Control</code></a> HTTP header.</td>
+    </tr>
+  </tbody>
+</table>
 
 ## Configuration File
 
@@ -89,7 +96,7 @@ paths:
     <tr>
       <th scope="row"><code>paths</code></th>
       <td>required</td>
-      <td>Map of paths to path configurations.  Each key is a path that will point to the root of a repository hosted elsewhere.  The fields are documented in the Path Configuration section below.</td>
+      <td>Map of paths to path configurations. Each key is a path that will point to the root of a repository hosted elsewhere. The fields are documented in the Path Configuration section below.</td>
     </tr>
   </tbody>
 </table>
@@ -122,3 +129,8 @@ paths:
     </tr>
   </tbody>
 </table>
+
+
+[gcloud]:        https://cloud.google.com/sdk/downloads
+[custom-domain]: https://cloud.google.com/appengine/docs/standard/python/using-custom-domains-and-ssl
+[portmidi]:      https://github.com/rakyll/portmidi
