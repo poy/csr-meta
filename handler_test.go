@@ -55,23 +55,11 @@ func TestHandler(t *testing.T) {
 			goSource: "example.com/portmidi https://github.com/rakyll/portmidi https://github.com/rakyll/portmidi/tree/master{/dir} https://github.com/rakyll/portmidi/blob/master{/dir}/{file}#L{line}",
 		},
 		{
-			name: "Bitbucket Mercurial",
-			config: "host: example.com\n" +
-				"paths:\n" +
-				"  /gopdf:\n" +
-				"    repo: https://bitbucket.org/zombiezen/gopdf\n" +
-				"    vcs: hg\n",
-			path:     "/gopdf",
-			goImport: "example.com/gopdf hg https://bitbucket.org/zombiezen/gopdf",
-			goSource: "example.com/gopdf https://bitbucket.org/zombiezen/gopdf https://bitbucket.org/zombiezen/gopdf/src/default{/dir} https://bitbucket.org/zombiezen/gopdf/src/default{/dir}/{file}#{file}-{line}",
-		},
-		{
 			name: "Bitbucket Git",
 			config: "host: example.com\n" +
 				"paths:\n" +
 				"  /mygit:\n" +
-				"    repo: https://bitbucket.org/zombiezen/mygit\n" +
-				"    vcs: git\n",
+				"    repo: https://bitbucket.org/zombiezen/mygit\n",
 			path:     "/mygit",
 			goImport: "example.com/mygit git https://bitbucket.org/zombiezen/mygit",
 			goSource: "example.com/mygit https://bitbucket.org/zombiezen/mygit https://bitbucket.org/zombiezen/mygit/src/default{/dir} https://bitbucket.org/zombiezen/mygit/src/default{/dir}/{file}#{file}-{line}",
@@ -131,22 +119,12 @@ func TestHandler(t *testing.T) {
 	}
 }
 
+// TODO: Roll into different test
 func TestBadConfigs(t *testing.T) {
 	badConfigs := []struct {
 		cfg      string
 		cacheAge time.Duration
 	}{
-		{
-			cfg: "paths:\n" +
-				"  /missingvcs:\n" +
-				"    repo: https://bitbucket.org/zombiezen/gopdf\n",
-		},
-		{
-			cfg: "paths:\n" +
-				"  /unknownvcs:\n" +
-				"    repo: https://bitbucket.org/zombiezen/gopdf\n" +
-				"    vcs: xyzzy\n",
-		},
 		{
 			cfg: "paths:\n" +
 				"  /portmidi:\n" +

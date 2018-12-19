@@ -37,7 +37,6 @@ type pathConfig struct {
 	path    string
 	repo    string
 	display string
-	vcs     string
 }
 
 func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
@@ -46,7 +45,6 @@ func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 		Paths map[string]struct {
 			Repo    string `yaml:"repo,omitempty"`
 			Display string `yaml:"display,omitempty"`
-			VCS     string `yaml:"vcs,omitempty"`
 		} `yaml:"paths,omitempty"`
 	}
 	if err := yaml.Unmarshal(config, &parsed); err != nil {
@@ -62,7 +60,6 @@ func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 			path:    strings.TrimSuffix(path, "/"),
 			repo:    e.Repo,
 			display: e.Display,
-			vcs:     e.VCS,
 		}
 		switch {
 		case e.Display != "":
@@ -71,17 +68,6 @@ func newHandler(cacheAge time.Duration, config []byte) (*handler, error) {
 			pc.display = fmt.Sprintf("%v %v/tree/master{/dir} %v/blob/master{/dir}/{file}#L{line}", e.Repo, e.Repo, e.Repo)
 		case strings.HasPrefix(e.Repo, "https://bitbucket.org"):
 			pc.display = fmt.Sprintf("%v %v/src/default{/dir} %v/src/default{/dir}/{file}#{file}-{line}", e.Repo, e.Repo, e.Repo)
-		}
-		switch {
-		case e.VCS != "":
-			// Already filled in.
-			if e.VCS != "bzr" && e.VCS != "git" && e.VCS != "hg" && e.VCS != "svn" {
-				return nil, fmt.Errorf("configuration for %v: unknown VCS %s", path, e.VCS)
-			}
-		case strings.HasPrefix(e.Repo, "https://github.com/"):
-			pc.vcs = "git"
-		default:
-			return nil, fmt.Errorf("configuration for %v: cannot infer VCS from %s", path, e.Repo)
 		}
 		h.paths = append(h.paths, pc)
 	}
@@ -107,13 +93,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Subpath string
 		Repo    string
 		Display string
-		VCS     string
 	}{
 		Import:  h.Host(r) + pc.path,
 		Subpath: subpath,
 		Repo:    pc.repo,
 		Display: pc.display,
-		VCS:     pc.vcs,
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
@@ -157,7 +141,7 @@ var vanityTmpl = template.Must(template.New("vanity").Parse(`<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<meta name="go-import" content="{{.Import}} {{.VCS}} {{.Repo}}">
+<meta name="go-import" content="{{.Import}} git {{.Repo}}">
 <meta name="go-source" content="{{.Import}} {{.Display}}">
 <meta http-equiv="refresh" content="0; url=https://godoc.org/{{.Import}}/{{.Subpath}}">
 </head>

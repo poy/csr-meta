@@ -70,7 +70,6 @@ paths:
   /foo:
     repo: https://github.com/example/foo
     display: "https://github.com/example/foo https://github.com/example/foo/tree/master{/dir} https://github.com/example/foo/blob/master{/dir}/{file}#L{line}"
-    vcs: git
 ```
 
 <table>
@@ -115,11 +114,6 @@ paths:
       <th scope="row"><code>repo</code></th>
       <td>required</td>
       <td>Root URL of the repository as it would appear in <a href="https://golang.org/cmd/go/#hdr-Remote_import_paths"><code>go-import</code> meta tag</a>.</td>
-    </tr>
-    <tr>
-      <th scope="row"><code>vcs</code></th>
-      <td>required if ambiguous</td>
-      <td>If the version control system cannot be inferred (e.g. for Bitbucket or a custom domain), then this specifies the version control system as it would appear in <a href="https://golang.org/cmd/go/#hdr-Remote_import_paths"><code>go-import</code> meta tag</a>.  This can be one of <code>git</code>, <code>hg</code>, <code>svn</code>, or <code>bzr</code>.</td>
     </tr>
   </tbody>
 </table>
