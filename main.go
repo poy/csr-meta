@@ -25,7 +25,7 @@ import (
 
 func main() {
 	log := log.New(os.Stderr, "", log.LstdFlags)
-	h, err := newHandler(cacheAge(log))
+	h, err := newHandler(host(), cacheAge(log))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,8 +35,13 @@ func main() {
 	}
 }
 
-func defaultHost(r *http.Request) string {
-	return r.Host
+func host() string {
+	h := os.Getenv("HOST")
+	if h == "" {
+		return "code.gopher.run"
+	}
+
+	return h
 }
 
 func cacheAge(log *log.Logger) time.Duration {

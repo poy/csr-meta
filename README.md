@@ -67,6 +67,11 @@ $ go get customdomain.com/portmidi
       <td>optional</td>
       <td>The amount of time to cache package pages as a time.Duration (e.g., <code>24h</code>). It will be rounded to the nearest second. Controls the <code>max-age</code> directive sent in the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control"><code>Cache-Control</code></a> HTTP header.</td>
     </tr>
+    <tr>
+      <th scope="row"><code>HOST</code></th>
+      <td>optional</td>
+      <td>The host that the code is being redirected from. It defaults to <code>code.gopher.run</code>.</td>
+    </tr>
   </tbody>
 </table>
 

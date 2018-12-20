@@ -26,6 +26,7 @@ import (
 
 type handler struct {
 	cacheControl string
+	host         string
 }
 
 type pathConfig struct {
@@ -33,8 +34,8 @@ type pathConfig struct {
 	repo string
 }
 
-func newHandler(cacheAge time.Duration) (*handler, error) {
-	h := &handler{}
+func newHandler(host string, cacheAge time.Duration) (*handler, error) {
+	h := &handler{host: host}
 	if cacheAge < 0 {
 		return nil, errors.New("cache_max_age is negative")
 	}
@@ -72,13 +73,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", h.cacheControl)
 	if err := vanityTmpl.Execute(w, struct {
-		Import  string
-		Subpath string
-		Repo    string
+		Import   string
+		Repo     string
+		RedirURL string
 	}{
-		Import:  fmt.Sprintf("%s/%s/%s", defaultHost(r), proj, repo),
-		Subpath: subpath,
-		Repo:    fmt.Sprintf("https://source.developers.google.com/p/%s/r/%s", proj, repo),
+		Import:   fmt.Sprintf("%s/%s/%s", h.host, proj, repo),
+		Repo:     fmt.Sprintf("https://source.developers.google.com/p/%s/r/%s", proj, repo),
+		RedirURL: fmt.Sprintf("https://source.cloud.google.com/%s/%s/+/master:%s", proj, repo, subpath),
 	}); err != nil {
 		http.Error(w, "cannot render the page", http.StatusInternalServerError)
 	}
@@ -89,9 +90,9 @@ var vanityTmpl = template.Must(template.New("vanity").Parse(`<!DOCTYPE html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <meta name="go-import" content="{{.Import}} git {{.Repo}}">
-<meta http-equiv="refresh" content="0; url=https://godoc.org/{{.Import}}/{{.Subpath}}">
+<meta http-equiv="refresh" content="0; url={{.RedirURL}}">
 </head>
 <body>
-Nothing to see here; <a href="https://godoc.org/{{.Import}}/{{.Subpath}}">see the package on godoc</a>.
+Nothing to see here; <a href="{{.RedirURL}}">see the source code on CSR</a>.
 </body>
 </html>`))

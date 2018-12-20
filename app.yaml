@@ -1,3 +1,8 @@
 runtime: go111
 env_variables:
   CACHE_AGE: 24h
+
+handlers:
+- url: '.*'
+  script: auto
+  secure: always

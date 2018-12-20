@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 )
@@ -76,7 +75,7 @@ func TestHandler(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			h, err := newHandler(0)
+			h, err := newHandler("example.com", 0)
 			if err != nil {
 				t.Fatalf("newHandler: %v", err)
 			}
@@ -116,12 +115,6 @@ func TestHandler(t *testing.T) {
 				t.Fatalf("ioutil.ReadAll: %v", err)
 			}
 
-			test.goImport = strings.Replace(
-				test.goImport,
-				"example.com",
-				strings.Replace(s.URL, "http://", "", 1),
-				1,
-			)
 			if got := findMeta(data, "go-import"); got != test.goImport {
 				t.Fatalf("meta go-import = %q; want %q", got, test.goImport)
 			}
@@ -130,7 +123,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestBadCacheAge(t *testing.T) {
-	_, err := newHandler(-1 * time.Second)
+	_, err := newHandler("example.com", -1*time.Second)
 	if err == nil {
 		t.Errorf("expected config to produce an error, but did not")
 	}
@@ -178,7 +171,7 @@ func TestCacheHeader(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			h, err := newHandler(test.cacheAge)
+			h, err := newHandler("example.com", test.cacheAge)
 			if err != nil {
 				t.Fatalf("newHandler: %v", err)
 			}
